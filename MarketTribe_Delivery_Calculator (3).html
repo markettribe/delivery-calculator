@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MarketTribe — Bezorgkosten Berekenen</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --mt-orange: #FF6B2C;
+            --mt-orange-glow: #FF8C55;
+            --mt-dark: #0D0D1A;
+            --mt-card: #161627;
+            --mt-card-border: #1E1E35;
+            --mt-input-bg: #1C1C33;
+            --mt-text: #FFFFFF;
+            --mt-text-muted: #8B8BA7;
+            --mt-success: #22C55E;
+            --mt-radius: 16px;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--mt-dark);
+            color: var(--mt-text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container { width: 100%; max-width: 480px; }
+
+        .header { text-align: center; padding: 32px 0 24px; }
+
+        .logo {
+            display: flex; align-items: center; justify-content: center;
+            gap: 10px; margin-bottom: 8px;
+        }
+
+        .logo-icon {
+            width: 40px; height: 40px; background: var(--mt-orange);
+            border-radius: 10px; display: flex; align-items: center; justify-content: center;
+            font-size: 20px; font-weight: 800; color: white;
+        }
+
+        .logo-text { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; }
+        .logo-text span { color: var(--mt-orange); }
+        .header p { color: var(--mt-text-muted); font-size: 14px; margin-top: 4px; }
+
+        .card {
+            background: var(--mt-card); border: 1px solid var(--mt-card-border);
+            border-radius: var(--mt-radius); padding: 24px; margin-bottom: 16px;
+        }
+
+        .card-title {
+            font-size: 13px; font-weight: 600; text-transform: uppercase;
+            letter-spacing: 1px; color: var(--mt-text-muted); margin-bottom: 16px;
+        }
+
+        .mode-toggle {
+            display: flex; background: var(--mt-input-bg);
+            border-radius: 10px; padding: 4px; margin-bottom: 20px;
+        }
+
+        .mode-btn {
+            flex: 1; padding: 10px 12px; border: none; border-radius: 8px;
+            background: transparent; color: var(--mt-text-muted);
+            font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600;
+            cursor: pointer; transition: all 0.2s;
+        }
+
+        .mode-btn.active { background: var(--mt-orange); color: white; }
+
+        .mode-section { display: none; }
+        .mode-section.active { display: block; }
+
+        .input-group { margin-bottom: 16px; }
+        .input-group:last-child { margin-bottom: 0; }
+
+        .input-label {
+            display: flex; align-items: center; gap: 8px;
+            font-size: 13px; font-weight: 500; color: var(--mt-text-muted); margin-bottom: 8px;
+        }
+
+        .input-label .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+        .dot-pickup { background: var(--mt-orange); }
+        .dot-delivery { background: var(--mt-success); }
+        .dot-km { background: var(--mt-orange); }
+
+        .input-wrapper { position: relative; }
+
+        .input-wrapper input {
+            width: 100%; background: var(--mt-input-bg);
+            border: 1.5px solid var(--mt-card-border); border-radius: 12px;
+            padding: 14px 16px; padding-right: 44px;
+            font-family: 'Inter', sans-serif; font-size: 15px; color: var(--mt-text);
+            outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .input-wrapper input::placeholder { color: #4A4A6A; }
+        .input-wrapper input:focus { border-color: var(--mt-orange); box-shadow: 0 0 0 3px rgba(255, 107, 44, 0.15); }
+
+        .input-icon {
+            position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+            color: var(--mt-text-muted); font-size: 18px;
+        }
+
+        .connector { display: flex; align-items: center; justify-content: center; padding: 4px 0; }
+
+        .connector-line {
+            width: 2px; height: 20px;
+            background: linear-gradient(var(--mt-orange), var(--mt-success)); border-radius: 1px;
+        }
+
+        .km-display {
+            display: flex; align-items: center; justify-content: center; gap: 16px; padding: 8px 0;
+        }
+
+        .km-btn {
+            width: 44px; height: 44px; border-radius: 12px;
+            border: 1.5px solid var(--mt-card-border); background: var(--mt-input-bg);
+            color: var(--mt-text); font-size: 22px; font-weight: 600; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; transition: all 0.15s;
+        }
+
+        .km-btn:hover { border-color: var(--mt-orange); background: rgba(255, 107, 44, 0.1); }
+        .km-btn:active { transform: scale(0.95); }
+
+        .km-value {
+            font-size: 40px; font-weight: 800; color: var(--mt-text);
+            min-width: 80px; text-align: center; letter-spacing: -1px;
+        }
+
+        .km-value span { font-size: 16px; font-weight: 600; color: var(--mt-text-muted); margin-left: 2px; }
+
+        .km-input-field {
+            width: 100%; background: var(--mt-input-bg);
+            border: 1.5px solid var(--mt-card-border); border-radius: 12px;
+            padding: 14px 16px; font-family: 'Inter', sans-serif; font-size: 15px;
+            color: var(--mt-text); outline: none; text-align: center;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .km-input-field:focus { border-color: var(--mt-orange); box-shadow: 0 0 0 3px rgba(255, 107, 44, 0.15); }
+        .km-input-field::placeholder { color: #4A4A6A; }
+
+        .btn-calculate {
+            width: 100%;
+            background: linear-gradient(135deg, var(--mt-orange), var(--mt-orange-glow));
+            border: none; border-radius: 12px; padding: 16px;
+            font-family: 'Inter', sans-serif; font-size: 16px; font-weight: 700;
+            color: white; cursor: pointer;
+            transition: transform 0.15s, box-shadow 0.15s; margin-top: 20px;
+        }
+
+        .btn-calculate:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(255, 107, 44, 0.35); }
+        .btn-calculate:active { transform: translateY(0); }
+        .btn-calculate:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        .result-card { display: none; animation: slideUp 0.4s ease; }
+        .result-card.visible { display: block; }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .result-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px 0; border-bottom: 1px solid var(--mt-card-border);
+        }
+
+        .result-row:last-child { border-bottom: none; padding-bottom: 0; }
+        .result-label { font-size: 14px; color: var(--mt-text-muted); }
+        .result-value { font-size: 14px; font-weight: 600; color: var(--mt-text); }
+
+        .result-total {
+            display: flex; justify-content: space-between; align-items: center;
+            background: linear-gradient(135deg, rgba(255, 107, 44, 0.12), rgba(255, 140, 85, 0.08));
+            border: 1px solid rgba(255, 107, 44, 0.25);
+            border-radius: 12px; padding: 16px; margin-top: 16px;
+        }
+
+        .result-total .label { font-size: 14px; font-weight: 600; color: var(--mt-orange-glow); }
+        .result-total .price { font-size: 28px; font-weight: 800; color: var(--mt-orange); letter-spacing: -1px; }
+
+        .cod-badge {
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.2);
+            border-radius: 10px; padding: 12px; margin-top: 16px;
+            font-size: 13px; font-weight: 600; color: var(--mt-success);
+        }
+
+        /* Distance advice banner */
+        .distance-advice {
+            display: none;
+            background: rgba(255, 183, 77, 0.08);
+            border: 1px solid rgba(255, 183, 77, 0.2);
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 16px;
+            animation: slideUp 0.4s ease;
+        }
+
+        .distance-advice.visible { display: block; }
+
+        .distance-advice .advice-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #FFB74D;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .distance-advice .advice-text {
+            font-size: 13px;
+            color: var(--mt-text-muted);
+            line-height: 1.6;
+        }
+
+        .distance-advice .advice-text strong {
+            color: var(--mt-orange);
+            font-weight: 600;
+        }
+
+        .tariff-card {
+            background: rgba(255, 107, 44, 0.04); border: 1px solid var(--mt-card-border);
+            border-radius: var(--mt-radius); padding: 20px; margin-bottom: 16px;
+        }
+
+        .tariff-row {
+            display: flex; justify-content: space-between; align-items: center; padding: 8px 0;
+        }
+
+        .tariff-row:not(:last-child) { border-bottom: 1px solid var(--mt-card-border); }
+        .tariff-label { font-size: 13px; color: var(--mt-text-muted); }
+        .tariff-value { font-size: 13px; font-weight: 700; color: var(--mt-orange); }
+
+        .info-card {
+            background: rgba(255, 107, 44, 0.06); border: 1px solid rgba(255, 107, 44, 0.12);
+            border-radius: var(--mt-radius); padding: 20px; margin-bottom: 16px;
+        }
+
+        .info-title { font-size: 14px; font-weight: 700; color: var(--mt-orange); margin-bottom: 12px; }
+
+        .info-item {
+            display: flex; align-items: flex-start; gap: 10px;
+            padding: 6px 0; font-size: 13px; color: var(--mt-text-muted); line-height: 1.5;
+        }
+
+        .info-item .emoji { flex-shrink: 0; font-size: 14px; }
+
+        .footer { text-align: center; padding: 24px 0 16px; }
+        .footer a { color: var(--mt-orange); text-decoration: none; font-weight: 600; font-size: 14px; }
+        .footer p { color: var(--mt-text-muted); font-size: 12px; margin-top: 8px; }
+
+        .spinner {
+            display: inline-block; width: 18px; height: 18px;
+            border: 2px solid rgba(255,255,255,0.3); border-top-color: white;
+            border-radius: 50%; animation: spin 0.6s linear infinite;
+            vertical-align: middle; margin-right: 8px;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .error-msg {
+            display: none; background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 10px;
+            padding: 12px 16px; font-size: 13px; color: #EF4444; margin-top: 12px;
+        }
+
+        .error-msg.visible { display: block; }
+
+        .pac-container {
+            background: var(--mt-card) !important; border: 1px solid var(--mt-card-border) !important;
+            border-radius: 12px !important; margin-top: 4px !important;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.5) !important;
+            font-family: 'Inter', sans-serif !important; padding: 4px !important;
+        }
+
+        .pac-item {
+            padding: 10px 14px !important; border-top: 1px solid var(--mt-card-border) !important;
+            color: var(--mt-text) !important; font-size: 14px !important;
+            cursor: pointer !important; border-radius: 8px !important; margin: 2px 0 !important;
+        }
+
+        .pac-item:first-child { border-top: none !important; }
+        .pac-item:hover { background: var(--mt-input-bg) !important; }
+        .pac-item-query { color: var(--mt-text) !important; font-weight: 500 !important; }
+        .pac-matched { color: var(--mt-orange) !important; font-weight: 600 !important; }
+        .pac-icon { display: none !important; }
+
+        .route-preview {
+            display: none; width: 100%; height: 200px;
+            border-radius: 12px; margin-bottom: 16px; border: 1px solid var(--mt-card-border);
+        }
+
+        .route-preview.visible { display: block; }
+
+        .live-price {
+            text-align: center; padding: 12px 0 0;
+            font-size: 13px; color: var(--mt-text-muted); transition: opacity 0.2s;
+        }
+
+        .live-price .amount { font-size: 20px; font-weight: 800; color: var(--mt-orange); }
+
+        /* Live advice under km slider */
+        .live-advice {
+            display: none;
+            text-align: center;
+            padding: 10px 16px;
+            margin-top: 8px;
+            font-size: 12px;
+            color: #FFB74D;
+            background: rgba(255, 183, 77, 0.06);
+            border-radius: 10px;
+            line-height: 1.5;
+        }
+
+        .live-advice.visible { display: block; }
+
+        @media (max-width: 400px) {
+            .container { padding: 0; }
+            .card { padding: 18px; border-radius: 14px; }
+            .result-total .price { font-size: 24px; }
+            .km-value { font-size: 32px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <div class="logo">
+            <div class="logo-icon">M</div>
+            <div class="logo-text">Market<span>Tribe</span></div>
+        </div>
+        <p>Bereken je bezorgkosten — Kwatta &amp; omgeving</p>
+    </div>
+
+    <div class="card">
+        <div class="card-title">📍 Bereken</div>
+
+        <div class="mode-toggle">
+            <button class="mode-btn active" onclick="switchMode('manual')">Afstand invoeren</button>
+            <button class="mode-btn" onclick="switchMode('maps')">Google Maps</button>
+        </div>
+
+        <!-- Manual mode -->
+        <div class="mode-section active" id="manualSection">
+            <div class="input-group">
+                <div class="input-label">
+                    <div class="dot dot-km"></div>
+                    Afstand in kilometers
+                </div>
+                <div class="km-display">
+                    <button class="km-btn" onclick="adjustKm(-1)">−</button>
+                    <div class="km-value" id="kmDisplay">5<span>km</span></div>
+                    <button class="km-btn" onclick="adjustKm(1)">+</button>
+                </div>
+                <input class="km-input-field" type="number" id="kmInput" placeholder="Of typ het aantal km" min="1" max="100" oninput="updateFromInput()">
+            </div>
+            <div class="live-price" id="livePrice">
+                Bezorgkosten: <span class="amount" id="livePriceAmount">SRD 125</span>
+            </div>
+            <div class="live-advice" id="liveAdvice"></div>
+            <button class="btn-calculate" onclick="calculateManual()">Bereken bezorgkosten</button>
+        </div>
+
+        <!-- Maps mode -->
+        <div class="mode-section" id="mapsSection">
+            <div class="input-group">
+                <div class="input-label">
+                    <div class="dot dot-pickup"></div>
+                    Ophaaladres (vendor / markt)
+                </div>
+                <div class="input-wrapper">
+                    <input type="text" id="pickupInput" placeholder="Bijv. Kwatta Markt, Paramaribo" autocomplete="off">
+                    <span class="input-icon">🏪</span>
+                </div>
+            </div>
+
+            <div class="connector"><div class="connector-line"></div></div>
+
+            <div class="input-group">
+                <div class="input-label">
+                    <div class="dot dot-delivery"></div>
+                    Bezorgadres (jouw locatie)
+                </div>
+                <div class="input-wrapper">
+                    <input type="text" id="deliveryInput" placeholder="Typ je adres of straatnaam" autocomplete="off">
+                    <span class="input-icon">🏠</span>
+                </div>
+            </div>
+
+            <div id="mapsNotice" class="error-msg" style="display:none; background: rgba(255, 107, 44, 0.08); border-color: rgba(255, 107, 44, 0.2); color: var(--mt-orange);">
+                Google Maps laden... Als er geen suggesties verschijnen, gebruik dan "Afstand invoeren".
+            </div>
+
+            <button class="btn-calculate" id="calcBtn" onclick="calculateMaps()">Bereken bezorgkosten</button>
+        </div>
+
+        <div class="error-msg" id="errorMsg"></div>
+    </div>
+
+    <div id="routeMap" class="route-preview"></div>
+
+    <!-- Results -->
+    <div class="card result-card" id="resultCard">
+        <div class="card-title">🧾 Bezorgkosten</div>
+
+        <div class="result-row">
+            <span class="result-label">Afstand</span>
+            <span class="result-value" id="resDistance">—</span>
+        </div>
+        <div class="result-row" id="resDurationRow" style="display:none;">
+            <span class="result-label">Geschatte reistijd</span>
+            <span class="result-value" id="resDuration">—</span>
+        </div>
+        <div class="result-row" id="rowTier1">
+            <span class="result-label">Eerste <span id="tier1Km">0</span> km × SRD 25</span>
+            <span class="result-value" id="resTier1">SRD 0</span>
+        </div>
+        <div class="result-row" id="rowTier2" style="display:none;">
+            <span class="result-label">Extra <span id="tier2Km">0</span> km × SRD 20</span>
+            <span class="result-value" id="resTier2">SRD 0</span>
+        </div>
+
+        <div class="result-total">
+            <div><div class="label">Totaal bezorgkosten</div></div>
+            <div style="text-align:right;">
+                <div class="price" id="resTotalPrice">SRD 0</div>
+            </div>
+        </div>
+
+        <!-- Distance advice in results -->
+        <div class="distance-advice" id="resultAdvice">
+            <div class="advice-title">🧡 Tip van MarketTribe</div>
+            <div class="advice-text" id="resultAdviceText"></div>
+        </div>
+
+        <div class="cod-badge">
+            💵 Cash bij bezorging (COD) — betaal aan de deur
+        </div>
+    </div>
+
+    <!-- Tariff -->
+    <div class="tariff-card">
+        <div class="card-title">📋 Tarieven</div>
+        <div class="tariff-row">
+            <span class="tariff-label">0 – 10 km</span>
+            <span class="tariff-value">SRD 25 / km</span>
+        </div>
+        <div class="tariff-row">
+            <span class="tariff-label">10+ km</span>
+            <span class="tariff-value">SRD 20 / km</span>
+        </div>
+    </div>
+
+    <!-- How it works -->
+    <div class="info-card">
+        <div class="info-title">Hoe werkt het?</div>
+        <div class="info-item"><span class="emoji">🛒</span><span>Bestel bij je favoriete vendor op MarketTribe</span></div>
+        <div class="info-item"><span class="emoji">📦</span><span>De vendor maakt je bestelling klaar</span></div>
+        <div class="info-item"><span class="emoji">🛵</span><span>Onze rider haalt het op en brengt het naar jou</span></div>
+        <div class="info-item"><span class="emoji">💵</span><span>Betaal cash bij de deur — geen app of bankkaart nodig</span></div>
+    </div>
+
+    <div class="footer">
+        <a href="https://markettribe.shop" target="_blank">markettribe.shop</a>
+        <p>© 2026 MarketTribe — Suriname 🇸🇷</p>
+    </div>
+</div>
+
+<script>
+    // ===== PRICING =====
+    let currentKm = 5;
+    const ADVICE_THRESHOLD = 8;
+
+    function calculatePrice(distanceKm) {
+        const km = Math.ceil(distanceKm);
+        if (km <= 0) return { tier1Km: 0, tier2Km: 0, total: 0 };
+        const tier1Limit = 10, tier1Rate = 25, tier2Rate = 20;
+        let tier1Km, tier2Km, total;
+        if (km <= tier1Limit) {
+            tier1Km = km; tier2Km = 0; total = tier1Km * tier1Rate;
+        } else {
+            tier1Km = tier1Limit; tier2Km = km - tier1Limit;
+            total = (tier1Km * tier1Rate) + (tier2Km * tier2Rate);
+        }
+        return { tier1Km, tier2Km, total };
+    }
+
+    function getAdviceText(km) {
+        if (km >= 8 && km <= 12) {
+            return 'Onze Kwatta-pilot is bedoeld voor klanten dichtbij de markt. Bij deze afstand zijn de bezorgkosten wat hoger. We zijn bezig vendors in <strong>zuid</strong> toe te voegen zodat bezorging in jouw buurt binnenkort goedkoper wordt! 🚀';
+        } else if (km > 12) {
+            return 'Deze afstand valt buiten ons Kwatta-pilotgebied, waardoor de bezorgkosten hoog zijn. Goed nieuws: we zoeken actief vendors in <strong>zuid en andere wijken</strong> zodat je binnenkort dichterbij kunt bestellen tegen een lagere bezorgprijs. Hou ons in de gaten! 🧡';
+        }
+        return '';
+    }
+
+    // ===== MODE TOGGLE =====
+    function switchMode(mode) {
+        document.querySelectorAll('.mode-btn').forEach((btn, i) => {
+            btn.classList.toggle('active', (mode === 'manual' && i === 0) || (mode === 'maps' && i === 1));
+        });
+        document.getElementById('manualSection').classList.toggle('active', mode === 'manual');
+        document.getElementById('mapsSection').classList.toggle('active', mode === 'maps');
+        document.getElementById('resultCard').classList.remove('visible');
+        document.getElementById('routeMap').classList.remove('visible');
+        if (mode === 'maps' && !mapsLoaded) {
+            document.getElementById('mapsNotice').style.display = 'block';
+        }
+    }
+
+    // ===== MANUAL MODE =====
+    function adjustKm(delta) {
+        currentKm = Math.max(1, Math.min(100, currentKm + delta));
+        document.getElementById('kmDisplay').innerHTML = currentKm + '<span>km</span>';
+        document.getElementById('kmInput').value = '';
+        updateLivePrice();
+    }
+
+    function updateFromInput() {
+        const val = parseInt(document.getElementById('kmInput').value);
+        if (!isNaN(val) && val >= 1 && val <= 100) {
+            currentKm = val;
+            document.getElementById('kmDisplay').innerHTML = currentKm + '<span>km</span>';
+            updateLivePrice();
+        }
+    }
+
+    function updateLivePrice() {
+        const pricing = calculatePrice(currentKm);
+        document.getElementById('livePriceAmount').textContent = 'SRD ' + pricing.total;
+
+        const adviceEl = document.getElementById('liveAdvice');
+        const advice = getAdviceText(currentKm);
+        if (advice) {
+            adviceEl.innerHTML = advice;
+            adviceEl.classList.add('visible');
+        } else {
+            adviceEl.classList.remove('visible');
+        }
+    }
+
+    function showResult(distanceKm, durationText) {
+        const km = Math.ceil(distanceKm);
+        const pricing = calculatePrice(distanceKm);
+
+        document.getElementById('resDistance').textContent = km + ' km';
+
+        if (durationText) {
+            document.getElementById('resDuration').textContent = durationText;
+            document.getElementById('resDurationRow').style.display = 'flex';
+        } else {
+            document.getElementById('resDurationRow').style.display = 'none';
+        }
+
+        document.getElementById('tier1Km').textContent = pricing.tier1Km;
+        document.getElementById('resTier1').textContent = 'SRD ' + (pricing.tier1Km * 25);
+
+        if (pricing.tier2Km > 0) {
+            document.getElementById('rowTier2').style.display = 'flex';
+            document.getElementById('tier2Km').textContent = pricing.tier2Km;
+            document.getElementById('resTier2').textContent = 'SRD ' + (pricing.tier2Km * 20);
+        } else {
+            document.getElementById('rowTier2').style.display = 'none';
+        }
+
+        document.getElementById('resTotalPrice').textContent = 'SRD ' + pricing.total;
+
+        // Show advice in result card
+        const adviceEl = document.getElementById('resultAdvice');
+        const adviceTextEl = document.getElementById('resultAdviceText');
+        const advice = getAdviceText(km);
+        if (advice) {
+            adviceTextEl.innerHTML = advice;
+            adviceEl.classList.add('visible');
+        } else {
+            adviceEl.classList.remove('visible');
+        }
+
+        document.getElementById('resultCard').classList.add('visible');
+        document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function calculateManual() { showResult(currentKm, null); }
+
+    updateLivePrice();
+
+    // ===== GOOGLE MAPS =====
+    let pickupAutocomplete, deliveryAutocomplete;
+    let pickupPlace, deliveryPlace;
+    let map, directionsRenderer;
+    let mapsLoaded = false;
+
+    function initAutocomplete() {
+        mapsLoaded = true;
+        document.getElementById('mapsNotice').style.display = 'none';
+
+        const srBounds = new google.maps.LatLngBounds(
+            new google.maps.LatLng(5.7, -56.1), new google.maps.LatLng(6.1, -54.9)
+        );
+
+        const options = {
+            bounds: srBounds, componentRestrictions: { country: 'sr' },
+            fields: ['geometry', 'formatted_address', 'name']
+        };
+
+        pickupAutocomplete = new google.maps.places.Autocomplete(document.getElementById('pickupInput'), options);
+        deliveryAutocomplete = new google.maps.places.Autocomplete(document.getElementById('deliveryInput'), options);
+
+        pickupAutocomplete.addListener('place_changed', () => { pickupPlace = pickupAutocomplete.getPlace(); });
+        deliveryAutocomplete.addListener('place_changed', () => { deliveryPlace = deliveryAutocomplete.getPlace(); });
+
+        document.getElementById('pickupInput').value = 'Kwatta Markt, Paramaribo';
+
+        const geocoder = new google.maps.Geocoder();
+        geocoder.geocode({ address: 'Kwatta Markt, Paramaribo, Suriname' }, (results, status) => {
+            if (status === 'OK' && results[0]) {
+                pickupPlace = {
+                    geometry: { location: results[0].geometry.location },
+                    formatted_address: results[0].formatted_address, name: 'Kwatta Markt'
+                };
+            }
+        });
+    }
+
+    function showError(msg) {
+        const el = document.getElementById('errorMsg');
+        el.textContent = msg; el.classList.add('visible');
+        setTimeout(() => el.classList.remove('visible'), 5000);
+    }
+
+    function calculateMaps() {
+        if (!mapsLoaded) {
+            showError('Google Maps is niet geladen. Gebruik "Afstand invoeren".');
+            return;
+        }
+
+        const btn = document.getElementById('calcBtn');
+        const errorMsg = document.getElementById('errorMsg');
+        errorMsg.classList.remove('visible');
+        document.getElementById('resultCard').classList.remove('visible');
+
+        if (!pickupPlace || !pickupPlace.geometry) { showError('Selecteer een ophaaladres uit de suggesties.'); return; }
+        if (!deliveryPlace || !deliveryPlace.geometry) { showError('Selecteer een bezorgadres uit de suggesties.'); return; }
+
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span>Berekenen...';
+
+        const service = new google.maps.DistanceMatrixService();
+        service.getDistanceMatrix({
+            origins: [pickupPlace.geometry.location],
+            destinations: [deliveryPlace.geometry.location],
+            travelMode: 'DRIVING', unitSystem: google.maps.UnitSystem.METRIC
+        }, (response, status) => {
+            btn.disabled = false;
+            btn.innerHTML = 'Bereken bezorgkosten';
+
+            if (status !== 'OK' || !response.rows[0].elements[0] || response.rows[0].elements[0].status !== 'OK') {
+                showError('Kon de route niet berekenen. Probeer andere adressen.');
+                return;
+            }
+
+            const element = response.rows[0].elements[0];
+            const distanceKm = element.distance.value / 1000;
+            const durationText = element.duration.text;
+
+            showResult(distanceKm, durationText);
+            showRoute(pickupPlace.geometry.location, deliveryPlace.geometry.location);
+        });
+    }
+
+    function showRoute(origin, destination) {
+        const mapDiv = document.getElementById('routeMap');
+        mapDiv.classList.add('visible');
+
+        if (!map) {
+            map = new google.maps.Map(mapDiv, {
+                zoom: 13, center: origin, disableDefaultUI: true, zoomControl: true,
+                styles: [
+                    { elementType: 'geometry', stylers: [{ color: '#1C1C33' }] },
+                    { elementType: 'labels.text.stroke', stylers: [{ color: '#0D0D1A' }] },
+                    { elementType: 'labels.text.fill', stylers: [{ color: '#8B8BA7' }] },
+                    { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#2A2A45' }] },
+                    { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: '#1E1E35' }] },
+                    { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#0e0e1e' }] },
+                    { featureType: 'poi', elementType: 'geometry', stylers: [{ color: '#1A1A30' }] }
+                ]
+            });
+            directionsRenderer = new google.maps.DirectionsRenderer({
+                map: map, suppressMarkers: false,
+                polylineOptions: { strokeColor: '#FF6B2C', strokeWeight: 4, strokeOpacity: 0.9 }
+            });
+        }
+
+        const directionsService = new google.maps.DirectionsService();
+        directionsService.route({
+            origin: origin, destination: destination, travelMode: 'DRIVING'
+        }, (result, status) => {
+            if (status === 'OK') directionsRenderer.setDirections(result);
+        });
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            if (document.getElementById('manualSection').classList.contains('active')) calculateManual();
+            else calculateMaps();
+        }
+    });
+</script>
+
+<script src="<redacted URL>" async defer onerror="document.getElementById('mapsNotice').style.display='block';document.getElementById('mapsNotice').textContent='Google Maps kon niet laden. Gebruik Afstand invoeren.';"></script>
+
+</body>
+</html>
